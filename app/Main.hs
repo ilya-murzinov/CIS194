@@ -104,7 +104,7 @@ mazeWithBoxes (Entry h t) c
   | otherwise   = mazeWithBoxes t c
 
 isClosed :: Maze -> Bool
-isClosed (Maze c m) = available (m c) &&
+isClosed (Maze c m) = (available $ m c) &&
   isGraphClosed c (adjacent m) (\coord -> m coord /= Blank)
 
 adjacent :: (Coord -> Tile) -> Coord -> List Coord
@@ -153,8 +153,8 @@ available _ = False
 tryMove :: Coord -> Direction -> List Coord -> Integer -> State
 tryMove from d boxes level
   | available $ mazeWithBoxes boxes to           = S to d boxes level
-  | isBox (mazeWithBoxes boxes to)
-      && available (mazeWithBoxes boxes boxTo) =
+  | (isBox $ mazeWithBoxes boxes to)
+      && (available $ mazeWithBoxes boxes boxTo) =
         S to d (moveBox to boxTo boxes) level
   | otherwise                                    = S from d boxes level
     where to    = adjacentCoord d from
@@ -210,7 +210,7 @@ drawTileAt c = atCoord c (drawTile (noBoxMaze c))
 
 
 atCoord :: Coord -> Picture -> Picture
-atCoord (C x y) = translated (fromIntegral x) (fromIntegral y)
+atCoord (C x y) pic = translated (fromIntegral x) (fromIntegral y) pic
 
 triangle :: Picture
 triangle = translated (-0.5) (-0.5) $
@@ -221,7 +221,7 @@ triangle = translated (-0.5) (-0.5) $
 player :: Direction -> Picture
 player R = triangle
 player U = rotated (pi/2) triangle
-player L = rotated pi triangle
+player L = rotated (pi) triangle
 player D = rotated (-pi/2) triangle
 
 pictureOfBoxes :: List Coord -> Picture
@@ -234,7 +234,7 @@ drawState :: State -> Picture
 drawState (S c d boxes level)
   | isWon (S c d boxes level) = winScreen & base
   | otherwise      = base
-  where base = atCoord c $ player d & pictureOfBoxes boxes & pictureOfMaze &
+  where base = (atCoord c $ player d) & (pictureOfBoxes boxes) & pictureOfMaze &
                 translated 0 (-8) $ text "Press 'Esc' to reset"
 
 
@@ -266,7 +266,7 @@ resetable (Interaction state0 step handle draw)
 -- Start screen
 
 startScreen :: Picture
-startScreen = scaled 3 3 (text "Sokoban!") &
+startScreen = (scaled 3 3 (text "Sokoban!")) &
   (translated 0 (-5) $ text "Press 'Space' to play")
 
 data SSState world = StartScreen | Running world
