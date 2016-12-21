@@ -51,10 +51,9 @@ isGraphClosed e adj isOk = go (adj e) (singleton e)
 
 -- Coordinates
 
-
 data Coord = C Integer Integer
 
-data Direction = R | U | L | D
+data Direction = R | U | L | D deriving Eq
 
 instance Eq Coord where
   (==) (C x1 y1) (C x2 y2) = x1 == x2 && y1 == y2
@@ -75,11 +74,17 @@ adjacentCoord D (C x y) = C  x   (y-1)
 
 data Maze = Maze Coord (Coord -> Tile)
 
+validMazes :: List Maze
+validMazes = filterList isClosed extraMazes
+
 getMaze :: Integer -> (Coord -> Tile)
-getMaze n = case nth extraMazes n of (Maze c m) -> m
+getMaze n = case nth validMazes n of (Maze c m) -> m
+
+isLast :: Integer -> Bool
+isLast n = listLength validMazes == n + 1
 
 getInit :: Integer -> Coord
-getInit n = case nth extraMazes n of (Maze c m) -> c
+getInit n = case nth validMazes n of (Maze c m) -> c
 
 data Tile = Wall | Ground | Storage | Box | Blank deriving Eq
 
@@ -92,16 +97,16 @@ maze (C x y)
   | x >= -2 && y == 0        = Box
   | otherwise                = Ground
 
-noBoxMaze :: Coord -> Tile
-noBoxMaze c
+noBoxMaze :: (Coord -> Tile) -> Coord -> Tile
+noBoxMaze maze c
   | isBox $ maze c = Ground
   | otherwise      = maze c
 
-mazeWithBoxes :: List Coord -> Coord -> Tile
-mazeWithBoxes Empty c = noBoxMaze c
-mazeWithBoxes (Entry h t) c
+mazeWithBoxes :: (Coord -> Tile) -> List Coord -> Coord -> Tile
+mazeWithBoxes maze Empty c = noBoxMaze maze c
+mazeWithBoxes maze (Entry h t) c
   | h == c = Box
-  | otherwise   = mazeWithBoxes t c
+  | otherwise   = mazeWithBoxes maze t c
 
 isClosed :: Maze -> Bool
 isClosed (Maze c m) = (available $ m c) &&
@@ -115,10 +120,10 @@ adjacent m c =
 
 -- The state
 
-data State = S Coord Direction (List Coord) Integer
+data State = S Coord Direction (List Coord) Integer deriving Eq
 
-initialCoords :: (Tile -> Bool) -> List Coord
-initialCoords f = combine21times Empty appendList
+initialCoords :: (Coord -> Tile) -> (Tile -> Bool) -> List Coord
+initialCoords maze f = combine21times Empty appendList
   (\r -> combine21times Empty appendList (\c -> go r c))
     where go :: Integer -> Integer -> List Coord
           go x y
@@ -134,14 +139,14 @@ isStorage :: Tile -> Bool
 isStorage Storage = True
 isStorage _       = False
 
-initialBoxes :: List Coord
-initialBoxes = initialCoords isBox
+initialBoxes :: (Coord -> Tile) -> List Coord
+initialBoxes maze = initialCoords maze isBox
 
-storages :: List Coord
-storages = initialCoords isStorage
+storages :: (Coord -> Tile) -> List Coord
+storages maze = initialCoords maze isStorage
 
-initialState :: State
-initialState = S (getInit 0) R initialBoxes 0
+loadLevel :: Integer -> State
+loadLevel n = S (getInit n) R (initialBoxes $ getMaze n) n
 
 -- Event handling
 
@@ -150,13 +155,13 @@ available Ground = True
 available Storage = True
 available _ = False
 
-tryMove :: Coord -> Direction -> List Coord -> Integer -> State
-tryMove from d boxes level
-  | available $ mazeWithBoxes boxes to           = S to d boxes level
-  | (isBox $ mazeWithBoxes boxes to)
-      && (available $ mazeWithBoxes boxes boxTo) =
+tryMove :: (Coord -> Tile) -> Coord -> Direction -> List Coord -> Integer -> State
+tryMove maze from d boxes level
+  | available $ mazeWithBoxes maze boxes to           = S to d boxes level
+  | (isBox $ mazeWithBoxes maze boxes to)
+      && (available $ mazeWithBoxes maze boxes boxTo) =
         S to d (moveBox to boxTo boxes) level
-  | otherwise                                    = S from d boxes level
+  | otherwise                                         = S from d boxes level
     where to    = adjacentCoord d from
           boxTo = adjacentCoord d to
 
@@ -168,17 +173,19 @@ moveBox from to (Entry h t)
 
 handleEvent :: Event -> State -> State
 handleEvent (KeyPress key) (S c d boxes level)
-    | isWon state    = state
-    | key == "Right" = tryMove c R boxes level
-    | key == "Up"    = tryMove c U boxes level
-    | key == "Left"  = tryMove c L boxes level
-    | key == "Down"  = tryMove c D boxes level
-    | otherwise      = state
+    | isWon maze state && isLast level = state
+    | isWon maze state && key == " "   = loadLevel (level + 1)
+    | key == "Right"                   = tryMove maze c R boxes level
+    | key == "Up"                      = tryMove maze c U boxes level
+    | key == "Left"                    = tryMove maze c L boxes level
+    | key == "Down"                    = tryMove maze c D boxes level
+    | otherwise                        = state
     where state = S c d boxes level
+          maze  = getMaze level
 handleEvent _ s      = s
 
-isWon :: State -> Bool
-isWon (S _ _ l _) = l == storages
+isWon :: (Coord -> Tile) -> State -> Bool
+isWon maze (S _ _ boxes _) = boxes == storages maze
 
 -- Drawing
 
@@ -195,9 +202,9 @@ drawTile Storage = storage
 drawTile Box     = box
 drawTile Blank   = blank
 
-pictureOfMaze :: Picture
-pictureOfMaze = combine21times blank (&)
-  (\r -> combine21times blank (&) (\c -> drawTileAt (C r c)))
+pictureOfMaze :: (Coord -> Tile) -> Picture
+pictureOfMaze maze = combine21times blank (&)
+  (\r -> combine21times blank (&) (\c -> drawTileAt maze (C r c)))
 
 combine21times :: out -> (out -> out -> out) -> (Integer -> out) -> out
 combine21times e comb something = go (-10)
@@ -205,8 +212,8 @@ combine21times e comb something = go (-10)
     go 11 = e
     go n  = comb (something n) (go (n+1))
 
-drawTileAt :: Coord -> Picture
-drawTileAt c = atCoord c (drawTile (noBoxMaze c))
+drawTileAt :: (Coord -> Tile) -> Coord -> Picture
+drawTileAt maze c = atCoord c (drawTile (noBoxMaze maze c))
 
 
 atCoord :: Coord -> Picture -> Picture
@@ -221,27 +228,37 @@ triangle = translated (-0.5) (-0.5) $
 player :: Direction -> Picture
 player R = triangle
 player U = rotated (pi/2) triangle
-player L = rotated (pi) triangle
+player L = rotated pi triangle
 player D = rotated (-pi/2) triangle
 
 pictureOfBoxes :: List Coord -> Picture
 pictureOfBoxes cs = combine (mapList (\c -> atCoord c (drawTile Box)) cs)
 
+esc :: Picture
+esc = translated 0 (-9) $ text "Press 'Esc' to reset"
+
 winScreen :: Picture
-winScreen = scaled 3 3 (text "You won!")
+winScreen = scaled 3 3 (text "You won!") &
+            esc &
+            (translated 0 (-6) $ text "Press 'Space' for next level")
+
+allDoneScreen :: Picture
+allDoneScreen = scaled 3 3 (text "All done!")
 
 drawState :: State -> Picture
 drawState (S c d boxes level)
-  | isWon (S c d boxes level) = winScreen & base
-  | otherwise      = base
-  where base = (atCoord c $ player d) & (pictureOfBoxes boxes) & pictureOfMaze &
-                translated 0 (-8) $ text "Press 'Esc' to reset"
-
+  | isWon maze (S c d boxes level) && isLast level = allDoneScreen & esc
+  | isWon maze (S c d boxes level)                 = winScreen & base
+  | otherwise                                      = esc & base
+  where maze = getMaze level
+        base = (atCoord c $ player d) &
+               (pictureOfBoxes boxes) &
+               pictureOfMaze maze
 
 -- The complete interaction
 
 sokoban :: Interaction State
-sokoban = Interaction initialState (\_ c -> c) handleEvent drawState
+sokoban = Interaction (loadLevel 0) (\_ c -> c) handleEvent drawState
 
 -- The general interaction type
 
@@ -266,10 +283,15 @@ resetable (Interaction state0 step handle draw)
 -- Start screen
 
 startScreen :: Picture
-startScreen = (scaled 3 3 (text "Sokoban!")) &
-  (translated 0 (-5) $ text "Press 'Space' to play")
+startScreen = scaled 3 3 (text "Sokoban!") &
+  translated 0 (-5) $ text "Press 'Space' to play"
 
 data SSState world = StartScreen | Running world
+
+instance Eq s => Eq (SSState s) where
+  StartScreen == StartScreen = True
+  Running s == Running s' = s == s'
+  _ == _ = False
 
 withStartScreen :: Interaction s  -> Interaction (SSState s)
 withStartScreen (Interaction state0 step handle draw)
@@ -286,6 +308,26 @@ withStartScreen (Interaction state0 step handle draw)
 
     draw' StartScreen = startScreen
     draw' (Running s) = draw s
+
+data WithUndo a = WithUndo a (List a)
+
+withUndo :: Eq a => Interaction a -> Interaction (WithUndo a)
+withUndo (Interaction state0 step handle draw)
+  = Interaction state0' step' handle' draw'
+  where
+    state0' = WithUndo state0 Empty
+
+    step' t (WithUndo s stack) = WithUndo (step t s) stack
+
+    handle' (KeyPress key) (WithUndo s stack) | key == "U"
+      = case stack of Entry s' stack' -> WithUndo s' stack'
+                      Empty           -> WithUndo s Empty
+    handle' e              (WithUndo s stack)
+       | s' == s = WithUndo s stack
+       | otherwise = WithUndo s' (Entry s stack)
+      where s' = handle e s
+
+    draw' (WithUndo s _) = draw s
 
 pictureOfBools :: List Bool -> Picture
 pictureOfBools xs = translated (-fromIntegral k /2) (fromIntegral k) (go 0 xs)
@@ -311,12 +353,15 @@ exercise3 :: Picture
 exercise3 = pictureOfBools $ mapList isClosed extraMazes
 
 main :: IO ()
-main = runInteraction $ resetable $ withStartScreen sokoban
+main = runInteraction $ resetable $ withUndo $ withStartScreen sokoban
 
 --------------------------------------------------------------------------------
 
 mazes :: List Maze
+{-| mazes = Entry (Maze (C 1 1)       maze0) $
+            Entry (Maze (C 1 1)       maze0) $ Empty |-}
 mazes =
+  Entry (Maze (C 1 1)       maze0) $
   Entry (Maze (C 1 1)       maze9) $
   Entry (Maze (C 0 0)       maze8) $
   Entry (Maze (C (-3) 3)    maze7) $
@@ -333,6 +378,14 @@ extraMazes =
   Entry (Maze (C 1 (-3))    maze4'') $
   Entry (Maze (C 1 1)       maze9') $
   mazes
+
+maze0 :: Coord -> Tile
+maze0 (C x y)
+  | abs x > 4  || abs y > 4  = Blank
+  | abs x == 4 || abs y == 4 = Wall
+  | x == 0 && y == 0         = Storage
+  | x == 1 && y == 0         = Box
+  | otherwise                = Ground
 
 maze1 :: Coord -> Tile
 maze1 (C x y)
