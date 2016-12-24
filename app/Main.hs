@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-import CodeWorld
+import           CodeWorld
 
 -- Lists
 
@@ -9,7 +9,7 @@ singleton :: a -> List a
 singleton a = Entry a Empty
 
 mapList :: (a -> b) -> List a -> List b
-mapList _ Empty = Empty
+mapList _ Empty        = Empty
 mapList f (Entry c cs) = Entry (f c) (mapList f cs)
 
 appendList :: List a -> List a -> List a
@@ -133,7 +133,7 @@ initialCoords maze f = combine21times Empty appendList
 
 isBox :: Tile -> Bool
 isBox Box = True
-isBox _ = False
+isBox _   = False
 
 isStorage :: Tile -> Bool
 isStorage Storage = True
@@ -151,9 +151,9 @@ loadLevel n = S (getInit n) R (initialBoxes $ getMaze n) n
 -- Event handling
 
 available :: Tile -> Bool
-available Ground = True
+available Ground  = True
 available Storage = True
-available _ = False
+available _       = False
 
 tryMove :: (Coord -> Tile) -> Coord -> Direction -> List Coord -> Integer -> State
 tryMove maze from d boxes level
@@ -278,7 +278,7 @@ resetable :: Interaction s -> Interaction s
 resetable (Interaction state0 step handle draw)
   = Interaction state0 step handle' draw
   where handle' (KeyPress key) _ | key == "Esc" = state0
-        handle' e s = handle e s
+        handle' e s              = handle e s
 
 -- Start screen
 
@@ -303,8 +303,8 @@ withStartScreen (Interaction state0 step handle draw)
     step' t (Running s) = Running (step t s)
 
     handle' (KeyPress key) StartScreen | key == " " = Running state0
-    handle' _              StartScreen              = StartScreen
-    handle' e              (Running s)              = Running (handle e s)
+    handle' _              StartScreen = StartScreen
+    handle' e              (Running s) = Running (handle e s)
 
     draw' StartScreen = startScreen
     draw' (Running s) = draw s
@@ -513,7 +513,7 @@ maze3 (C   4  (-2)) = Wall
 maze3 (C   4  (-1)) = Wall
 maze3 (C   4    0 ) = Wall
 
-maze3 _ = Blank
+maze3 _             = Blank
 
 maze4 :: Coord -> Tile
 maze4 (C x y)
@@ -597,11 +597,11 @@ maze9 (C x y)
 
 maze4'' :: Coord -> Tile
 maze4'' (C 1 (-3)) = Box
-maze4'' c = maze4 c
+maze4'' c          = maze4 c
 
 maze4' :: Coord -> Tile
 maze4' (C 0 1) = Blank
-maze4' c = maze4 c
+maze4' c       = maze4 c
 
 maze9' :: Coord -> Tile
 maze9' (C 3 0) = Box

@@ -8,18 +8,36 @@ license-file:        LICENSE
 author:              Ilya Murzinov
 maintainer:          murz42@gmail.com
 copyright:           2016 Ilya Murzinov
-category:            Web
+category:            Web/CLI
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
-executable codeworld-exe
+library
   hs-source-dirs:      src
+  exposed-modules:     Lib
+  build-depends:       base
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+executable codeworld-exe
+  hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
+                     , sokoban
                      , codeworld-api == 0.2.0.0
   default-language:    Haskell2010
+
+Test-Suite test-melody
+  type:               exitcode-stdio-1.0
+  main-is:            Specs.hs
+  hs-source-dirs:     test
+  build-depends:      base
+                    , sokoban
+                    , HUnit == 1.5.0.0
+  default-language:   Haskell2010
+
 
 source-repository head
   type:     git
