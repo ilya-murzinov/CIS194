@@ -62,10 +62,9 @@ wordCount s =
   "\nNumber of words followed by themselves:" ++ numOfRepeatedWords ++
   "\nLength of the longest line: " ++ longestLineLength
     where lin = lines s
-          w   = group $ words s
           numOfLines         = show $ length lin
           numOfNonemptyLines = show $ length $ filter (not . null) lin
           numOfWords         = show $ length $ words s
-          numOfUniqueWords   = show $ length w
-          numOfRepeatedWords = show $ length $ filter (\g -> length g > 1) w
+          numOfUniqueWords   = show $ length $ nub $ words s
+          numOfRepeatedWords = show $ length $ filter (\g -> length g > 1) $ group $ words s
           longestLineLength  = show $ length $ longestText lin

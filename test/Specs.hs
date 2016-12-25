@@ -2,6 +2,7 @@
 import           Lib
 import           Test.HUnit
 
+halveEvensTests :: Test
 halveEvensTests = TestList
   [
     TestCase $ assertEqual "Empty list" [] $ halveEvens []
@@ -10,6 +11,7 @@ halveEvensTests = TestList
                [3,3,3,1,1,1] $ halveEvens [6,6,6,3,3,3,2,2,2]
   ]
 
+safeStringTests :: Test
 safeStringTests = TestList
   [
     TestCase $ assertEqual "Hello World!"
@@ -20,6 +22,7 @@ safeStringTests = TestList
                "_.o(_Me Me Me_)" $ safeString "🙋.o(“Me Me Me”)"
   ]
 
+holesTests :: Test
 holesTests = TestList
   [
     TestCase $ assertEqual "[1,2,3]" [[2,3], [1,3], [1,2]] $ holes [1,2,3]
@@ -27,6 +30,7 @@ holesTests = TestList
                "Hello" ["ello", "Hllo", "Helo", "Helo", "Hell"] $ holes "Hello"
   ]
 
+longestTextTests :: Test
 longestTextTests = TestList
   [
     TestCase $ assertEqual "[True,False" False $ longestText [True,False]
@@ -37,6 +41,7 @@ longestTextTests = TestList
                "Olá" $ longestText $ words "Olá mundo"
   ]
 
+adjacentsTests :: Test
 adjacentsTests = TestList
   [
     TestCase $ assertEqual "Empty string" [] $ adjacents ""
@@ -45,6 +50,7 @@ adjacentsTests = TestList
                [('H','e'),('e','l'),('l','l'),('l','o')] $ adjacents "Hello"
   ]
 
+commasTests :: Test
 commasTests = TestList
   [
     TestCase $ assertEqual "Empty string" "" $ commas []
@@ -57,6 +63,7 @@ commasTests = TestList
                "Hello, new, World" $ commas ["Hello", "new", "World"]
   ]
 
+addPolynomialsTests :: Test
 addPolynomialsTests = TestList
   [
     TestCase $ assertEqual "Empty list" [] $ addPolynomials [[]]
@@ -66,6 +73,7 @@ addPolynomialsTests = TestList
                [5,0,10] $ addPolynomials [[0, 1, 5], [7, 0, 0], [-2, -1, 5]]
   ]
 
+sumNumbersTests :: Test
 sumNumbersTests = TestList
   [
     TestCase $ assertEqual "Empty string" 0 $ sumNumbers ""
@@ -78,13 +86,14 @@ sumNumbersTests = TestList
   , TestCase $ assertEqual "0.00a." 0 $ sumNumbers "0.00a."
   ]
 
+wordCountTests :: Test
 wordCountTests = TestList
   [
     TestCase $ assertEqual "World count"
                ("Number of lines: 7" ++
                "\nNumber of empty lines: 6" ++
                "\nNumber of words: 59" ++
-               "\nNumber of unique words: 58" ++
+               "\nNumber of unique words: 48" ++
                "\nNumber of words followed by themselves:1" ++
                "\nLength of the longest line: 70") $
                wordCount $
@@ -97,6 +106,7 @@ wordCountTests = TestList
                "\nUse the given examples to understand the function better, if required."
   ]
 
+tests :: Test
 tests = TestList
   [
     halveEvensTests
