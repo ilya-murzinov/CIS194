@@ -1,22 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Sokoban
-    (
-      List (..)
-    , Tile (..)
-    , Coord (..)
-    , Direction (..)
-    , Maze (..)
-    , State (..)
-    , mapList
-    , isLast
-    , isWon
-    , noBoxMaze
-    , mazeWithBoxes
-    , validMazes
-    , getMaze
-    , loadLevel
-    , tryMove
-    ) where
+  (
+    List (..)
+  , Tile (..)
+  , Coord (..)
+  , Direction (..)
+  , Maze (..)
+  , State (..)
+  , mapList
+  , combine
+  , isLast
+  , isWon
+  , combine21times
+  , noBoxMaze
+  , mazeWithBoxes
+  , validMazes
+  , getMaze
+  , loadLevel
+  , tryMove
+  ) where
 
 data List a = Empty | Entry a (List a)
 
@@ -70,6 +72,10 @@ nth :: List a -> Integer -> a
 nth Empty _       = undefined
 nth (Entry h _) 0 = h
 nth (Entry _ t) n = nth t (n-1)
+
+combine :: a -> (a -> a -> a) -> List a -> a
+combine acc _ Empty            = acc
+combine acc f (Entry p ps)     = combine (f acc p) f ps
 
 isGraphClosed :: Eq a => a -> (a -> List a) -> (a -> Bool) -> Bool
 isGraphClosed e adj isOk = go (adj e) (singleton e)

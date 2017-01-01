@@ -20,15 +20,8 @@ pictureOfMaze :: (Coord -> Tile) -> Picture
 pictureOfMaze maze = combine21times blank (&)
   (\r -> combine21times blank (&) (drawTileAt maze . C r))
 
-combine21times :: out -> (out -> out -> out) -> (Integer -> out) -> out
-combine21times e comb something = go (-10)
-  where
-    go 11 = e
-    go n  = comb (something n) (go (n+1))
-
 drawTileAt :: (Coord -> Tile) -> Coord -> Picture
 drawTileAt maze c = atCoord c (drawTile (noBoxMaze maze c))
-
 
 atCoord :: Coord -> Picture -> Picture
 atCoord (C x y) = translated (fromIntegral x) (fromIntegral y)
@@ -45,12 +38,9 @@ player U = rotated (pi/2) triangle
 player L = rotated pi triangle
 player D = rotated (-pi/2) triangle
 
-combine :: List Picture -> Picture
-combine Empty        = blank
-combine (Entry p ps) = p & combine ps
-
 pictureOfBoxes :: List Coord -> Picture
-pictureOfBoxes cs = combine (mapList (\c -> atCoord c (drawTile Box)) cs)
+pictureOfBoxes cs = combine blank (&) $
+  mapList (\c -> atCoord c (drawTile Box)) cs
 
 esc :: Picture
 esc = translated 0 (-9) $ text "Press 'Esc' to reset"
