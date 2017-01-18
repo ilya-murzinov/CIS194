@@ -106,6 +106,19 @@ wordCountTests = TestList
                "\nUse the given examples to understand the function better, if required."
   ]
 
+fibTests :: Test
+fibTests = TestList
+  [
+    TestCase $ assertEqual "fib 15 == 610" 610 $ fib 14
+  , TestCase $ assertEqual "fibs1 == [1,1,2,3,5,..]" [1,1,2,3,5] $ take 5 fibs1
+  ]
+
+supplyTests :: Test
+supplyTests = TestList
+  [
+    TestCase $ assertEqual "42 == 42" 42 $ runSupply nats $ pure 42
+  ]
+
 tests :: Test
 tests = TestList
   [
@@ -118,6 +131,8 @@ tests = TestList
   , addPolynomialsTests
   , sumNumbersTests
   , wordCountTests
+  , fibTests
+  , supplyTests
   ]
 
 main :: IO Counts
