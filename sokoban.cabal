@@ -52,4 +52,4 @@ Test-Suite test-melody
 
 source-repository head
   type:     git
-  location: https://github.com/ilya-murzinov/sokoban-haskell
+  location: https://github.com/ilya-murzinov/CIS184

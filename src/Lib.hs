@@ -166,3 +166,21 @@ labelTree t = runSupply nats (go t)
     go :: Tree a -> Supply s (Tree s)
     go (Node t1 t2) = Node <$> go t1 <*> go t2
     go (Leaf _) = Leaf <$> get
+
+data ComplicatedA a b
+    = Con1 a b
+    | Con2 [Maybe (a -> b)]
+
+instance Functor (ComplicatedA c) where
+  fmap f (Con1 c a) = Con1 c (f a)
+  fmap f (Con2 l) = Con2 (map (fmap (f .)) l)
+
+data ComplicatedB f g a b
+    = Con3 (f a)
+    | Con4 (g b)
+    | Con5 (g (g [b]))
+
+instance Functor g => Functor (ComplicatedB f g a) where
+  fmap _ (Con3 fa) = Con3 fa
+  fmap f (Con4 fb) = Con4 $ f <$> fb
+  fmap f (Con5 g) = Con5 (fmap (fmap (map f)) g)
