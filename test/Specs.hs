@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           Lib
+import           Parsers
 import           Test.HUnit
 
 halveEvensTests :: Test
@@ -119,6 +120,40 @@ supplyTests = TestList
     TestCase $ assertEqual "42 == 42" 42 $ runSupply nats $ pure 42
   ]
 
+parserTests :: Test
+parserTests = TestList
+  [
+    TestCase $ assertEqual "parseCSV" (Just [["ab", "cd"],["","de"],[]]) $
+      parse parseCSV "\"ab\",\"cd\"\n\"\",\"de\"\n\n"
+  , TestCase $ assertEqual "parseINI" (Just
+      [ ("requests",[("desiredFood","cookies"),("desiredQuantity","20")])
+      , ("supply",[("flour","20 ounzes") ,("sugar","none!")])
+      , ("conclusion",[])]) $
+      parse parseINI "[requests]\
+                     \\ndesiredFood = cookies\
+                     \\ndesiredQuantity = 20\
+                     \\n\
+                     \\n[supply]\
+                     \\nflour = 20 ounzes\
+                     \\nsugar = none!\
+                     \\n\
+                     \\n[conclusion]"
+  , TestCase $ assertEqual "parseINI" (Just
+      [ ("requests",[("desiredFood","cookies"),("desiredQuantity","20")])
+      , ("supply",[("flour","20 ounzes") ,("sugar","none!")])
+      , ("conclusion",[])]) $
+      parse parseINI "[requests]\
+                     \\ndesiredFood = cookies\
+                     \\ndesiredQuantity = 20\
+                     \\n\
+                     \\n[supply]\
+                     \\nflour = 20 ounzes\
+                     \\nsugar = none!\
+
+                     \\n[conclusion]\
+                     \\n# none!"
+  ]
+
 tests :: Test
 tests = TestList
   [
@@ -133,6 +168,7 @@ tests = TestList
   , wordCountTests
   , fibTests
   , supplyTests
+  , parserTests
   ]
 
 main :: IO Counts
