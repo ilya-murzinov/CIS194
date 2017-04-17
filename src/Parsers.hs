@@ -2,6 +2,7 @@ module Parsers
   ( parse
   , parseCSV
   , parseINI
+  , INIFile
   ) where
 
 import Data.Char

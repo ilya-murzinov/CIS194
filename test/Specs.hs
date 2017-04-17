@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+import qualified EBNF
 import           Lib
 import           Parsers
 import           Test.HUnit
@@ -120,6 +121,23 @@ supplyTests = TestList
     TestCase $ assertEqual "42 == 42" 42 $ runSupply nats $ pure 42
   ]
 
+iniString :: String
+iniString = "[requests]\
+            \\ndesiredFood = cookies\
+            \\ndesiredQuantity = 20\
+            \\n\
+            \\n[supply]\
+            \\nflour = 20 ounzes\
+            \\nsugar = none!\
+            \\n\
+            \\n[conclusion]\n"
+
+parsedINI :: Maybe INIFile
+parsedINI = Just
+    [ ("requests",[("desiredFood","cookies"),("desiredQuantity","20")])
+    , ("supply",[("flour","20 ounzes") ,("sugar","none!")])
+    , ("conclusion",[])]
+
 parserTests :: Test
 parserTests = TestList
   [
@@ -129,29 +147,19 @@ parserTests = TestList
       [ ("requests",[("desiredFood","cookies"),("desiredQuantity","20")])
       , ("supply",[("flour","20 ounzes") ,("sugar","none!")])
       , ("conclusion",[])]) $
-      parse parseINI "[requests]\
-                     \\ndesiredFood = cookies\
-                     \\ndesiredQuantity = 20\
-                     \\n\
-                     \\n[supply]\
-                     \\nflour = 20 ounzes\
-                     \\nsugar = none!\
-                     \\n\
-                     \\n[conclusion]"
-  , TestCase $ assertEqual "parseINI" (Just
-      [ ("requests",[("desiredFood","cookies"),("desiredQuantity","20")])
-      , ("supply",[("flour","20 ounzes") ,("sugar","none!")])
-      , ("conclusion",[])]) $
-      parse parseINI "[requests]\
-                     \\ndesiredFood = cookies\
-                     \\ndesiredQuantity = 20\
-                     \\n\
-                     \\n[supply]\
-                     \\nflour = 20 ounzes\
-                     \\nsugar = none!\
-
-                     \\n[conclusion]\
-                     \\n# none!"
+      parse parseINI iniString
+  , TestCase $ assertEqual "parseINI" parsedINI $ parse parseINI iniString
+  , TestCase $ assertEqual "EBNF.parseINIP" parsedINI $ EBNF.parse EBNF.parseINIP iniString
+  , TestCase $ assertEqual "EBNF.parseINIP test" Nothing $ EBNF.parse EBNF.parseINIP "[asd]\nasd=asd"
+  , TestCase $ assertEqual "EBNF.descrINI" "identifier = alphanum, {alphanum};\
+                                            \\nspaces = {' '};\
+                                            \\nline-remainder = non-newline, {non-newline}, newline;\
+                                            \\ndeclaration = identifier, spaces, '=', spaces, line-remainder;\
+                                            \\ncomment = '#', line-remainder;\
+                                            \\nline = declaration | comment | newline;\
+                                            \\nsection = '[', identifier, ']', newline, {line};\
+                                            \\nini = section, {section};\n" $
+      EBNF.ppGrammar "ini" EBNF.descrINI
   ]
 
 tests :: Test
